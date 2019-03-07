@@ -32,6 +32,7 @@
     "bluebird": "^3.5.3",
     "fs-extra": "^7.0.1",
     "lodash": "^4.17.11",
+    "promptly": "~3.0.3",
     "rimraf": "^2.6.3",
     "rxjs": "^5.5.10",
     "spawn-rx": "~2.0.12",
@@ -39,9 +40,11 @@
     "xml2js": "^0.4.19"
   },
   "devDependencies": {
+    "@types/argparse": "^1.0.36",
     "@types/fs-extra": "^5.0.5",
     "@types/mocha": "^2.2.42",
     "@types/node": "~11.9.6",
+    "@types/promptly": "^1.1.28",
     "@types/tmp": "0.0.34",
     "@types/xml2js": "^0.4.3",
     "ts-loader": "^5.3.3",

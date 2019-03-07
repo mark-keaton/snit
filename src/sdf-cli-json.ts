@@ -6,7 +6,8 @@ export const SdfCliJson = `{
       "account": "00000000",
       "url": "system.sandbox.netsuite.com",
       "role": 3,
-      "email": "email@address.com"
+      "email": "email@address.com",
+      "active": true
     },
     {
       "name": "Production",
@@ -15,5 +16,8 @@ export const SdfCliJson = `{
       "role": 3,
       "email": "email@address.com"
     }
-  ]
+  ],
+  "options": {
+    "useQuickDeploy": true
+  }
 }`;

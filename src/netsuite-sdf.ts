@@ -1,11 +1,10 @@
-import * as vscode from 'vscode';
-
 import * as fs from 'fs-extra';
 import * as path from 'path';
 import { chdir } from 'process';
 import { ChildProcess } from 'child_process';
 
 import * as _ from 'lodash';
+import * as promptly from 'promptly';
 import * as rimraf from 'rimraf';
 import * as tmp from 'tmp';
 import * as xml2js from 'xml2js';
@@ -36,34 +35,34 @@ export class NetSuiteSDF {
   doSendPassword = true;
   doShowOutput = true;
   intervalId;
-  outputChannel: vscode.OutputChannel;
+  // outputChannel: vscode.OutputChannel;
   password: string;
   rootPath: string;
   savedStatus: string;
   sdfcli: Observable<string>;
   sdfConfig: SDFConfig;
   sdfCliIsInstalled = true; // Prevents error messages while Code is testing SDFCLI is installed.
-  statusBar: vscode.StatusBarItem;
+  // statusBar: vscode.StatusBarItem;
   tempDir: tmp.SynchrounousResult;
   hasSdfCache: boolean;
   xmlBuilder = new xml2js.Builder({ headless: true });
 
-  constructor(private context: vscode.ExtensionContext) {
+  constructor() {
     this.checkSdfCliIsInstalled().then(() => {
       if (this.sdfCliIsInstalled) {
-        this.initializeStatusBar();
-        this.outputChannel = vscode.window.createOutputChannel('SDF');
+        // this.initializeStatusBar();
+        // this.outputChannel = vscode.window.createOutputChannel('SDF');
       }
     });
   }
 
-  private initializeStatusBar() {
-    this.statusBar = vscode.window.createStatusBarItem();
-    this.statusBar.text = this.statusBarDefault;
-    this.statusBar.tooltip = 'Click here to select your NetSuite environment';
-    this.statusBar.command = 'extension.selectEnvironment';
-    this.statusBar.show();
-  }
+  // private initializeStatusBar() {
+  //   this.statusBar = vscode.window.createStatusBarItem();
+  //   this.statusBar.text = this.statusBarDefault;
+  //   this.statusBar.tooltip = 'Click here to select your NetSuite environment';
+  //   this.statusBar.command = 'extension.selectEnvironment';
+  //   this.statusBar.show();
+  // }
 
   get statusBarDefault() {
     if (this.activeEnvironment) {
@@ -79,7 +78,7 @@ export class NetSuiteSDF {
 
   async addDependencies() {
     if (!this.sdfCliIsInstalled) {
-      vscode.window.showErrorMessage("'sdfcli' not found in path. Please restart VS Code if you installed it.");
+      console.error("'sdfcli' not found in path. Please restart VS Code if you installed it.");
       return;
     }
 
@@ -101,7 +100,7 @@ export class NetSuiteSDF {
 
   async createProject() {
     if (!this.sdfCliIsInstalled) {
-      vscode.window.showErrorMessage("'sdfcli' not found in path. Please restart VS Code if you installed it.");
+      console.error("'sdfcli' not found in path. Please restart VS Code if you installed it.");
       return;
     }
 
@@ -109,16 +108,10 @@ export class NetSuiteSDF {
     this.addDefaultParameters = false;
 
     const pathPrompt = `Please enter your the parent directory to create the Project in`;
-    const outputPath = await vscode.window.showInputBox({
-      prompt: pathPrompt,
-      ignoreFocusOut: true
-    });
+    const outputPath = await promptly.prompt(pathPrompt);
     if (outputPath) {
       const projectNamePrompt = `Please enter your project's name`;
-      const projectName = await vscode.window.showInputBox({
-        prompt: projectNamePrompt,
-        ignoreFocusOut: true
-      });
+      const projectName = await promptly.prompt(projectNamePrompt);
       if (projectName) {
         await this.runCommand(
           CLICommand.CreateProject,
@@ -163,20 +156,19 @@ export class NetSuiteSDF {
 
   async deploy() {
     if (!this.sdfCliIsInstalled) {
-      vscode.window.showErrorMessage("'sdfcli' not found in path. Please restart VS Code if you installed it.");
+      console.error("'sdfcli' not found in path. Please restart VS Code if you installed it.");
       return;
     }
     await this.getConfig();
 
-    let config = vscode.workspace.getConfiguration('netsuitesdf');
-    const useQuickDeploy = config.get('useQuickDeploy');
+    const useQuickDeploy = _.get(this.sdfConfig, 'useQuickDeploy', false);
     if (useQuickDeploy) {
       await this._generateTempDeployDirectory();
 
       await this.runCommand(CLICommand.Deploy);
 
       await rimraf(this.rootPath + '/var', (err: Error) => {
-        vscode.window.showErrorMessage(err.message);
+        console.error(err.message);
       });
     } else {
       await this.runCommand(CLICommand.Deploy);
@@ -185,7 +177,7 @@ export class NetSuiteSDF {
 
   importBundle() {
     if (!this.sdfCliIsInstalled) {
-      vscode.window.showErrorMessage("'sdfcli' not found in path. Please restart VS Code if you installed it.");
+      console.error("'sdfcli' not found in path. Please restart VS Code if you installed it.");
       return;
     }
 
@@ -194,29 +186,29 @@ export class NetSuiteSDF {
     this.runCommand(CLICommand.ImportBundle);
   }
 
-  async importFiles() {
-    if (!this.sdfCliIsInstalled) {
-      vscode.window.showErrorMessage("'sdfcli' not found in path. Please restart VS Code if you installed it.");
-      return;
-    }
+  // async importFiles() {
+  //   if (!this.sdfCliIsInstalled) {
+  //     console.error("'sdfcli' not found in path. Please restart VS Code if you installed it.");
+  //     return;
+  //   }
 
-    this.doAddProjectParameter = false;
-    this.doReturnData = true;
+  //   this.doAddProjectParameter = false;
+  //   this.doReturnData = true;
 
-    const collectedData = await this.listFiles();
-    if (collectedData) {
-      const filteredData = collectedData.filter(data => data.indexOf('SuiteScripts') >= 0);
-      if (filteredData.length > 0) {
-        const selectedFiles = await vscode.window.showQuickPick(filteredData, {
-          canPickMany: true,
-          ignoreFocusOut: true
-        });
-        if (selectedFiles && selectedFiles.length > 0) {
-          this._importFiles(selectedFiles);
-        }
-      }
-    }
-  }
+  //   const collectedData = await this.listFiles();
+  //   if (collectedData) {
+  //     const filteredData = collectedData.filter(data => data.indexOf('SuiteScripts') >= 0);
+  //     if (filteredData.length > 0) {
+  //       const selectedFiles = await vscode.window.showQuickPick(filteredData, {
+  //         canPickMany: true,
+  //         ignoreFocusOut: true
+  //       });
+  //       if (selectedFiles && selectedFiles.length > 0) {
+  //         this._importFiles(selectedFiles);
+  //       }
+  //     }
+  //   }
+  // }
 
   async _importFiles(files: string[]) {
     const cleanedFiles = _.map(files, file => `"${file}"`);
@@ -224,27 +216,27 @@ export class NetSuiteSDF {
     this.runCommand(CLICommand.ImportFiles, `-paths ${fileString}`);
   }
 
-  async importObjects(context?: any) {
-    if (!this.sdfCliIsInstalled) {
-      vscode.window.showErrorMessage("'sdfcli' not found in path. Please restart VS Code if you installed it.");
-      return;
-    }
+  // async importObjects(context?: any) {
+  //   if (!this.sdfCliIsInstalled) {
+  //     console.error("'sdfcli' not found in path. Please restart VS Code if you installed it.");
+  //     return;
+  //   }
 
-    const collectedData = await this.listObjects();
-    if (collectedData) {
-      const filteredData = collectedData.filter(data => data.indexOf('cust') >= 0);
-      if (filteredData.length > 0) {
-        const selectedObjects = await vscode.window.showQuickPick(filteredData, {
-          canPickMany: true,
-          ignoreFocusOut: true
-        });
-        if (selectedObjects && selectedObjects.length > 0) {
-          this.createPath(this.currentObject.destination);
-          this._importObjects(this.currentObject.type, selectedObjects, this.currentObject.destination);
-        }
-      }
-    }
-  }
+  //   const collectedData = await this.listObjects();
+  //   if (collectedData) {
+  //     const filteredData = collectedData.filter(data => data.indexOf('cust') >= 0);
+  //     if (filteredData.length > 0) {
+  //       const selectedObjects = await vscode.window.showQuickPick(filteredData, {
+  //         canPickMany: true,
+  //         ignoreFocusOut: true
+  //       });
+  //       if (selectedObjects && selectedObjects.length > 0) {
+  //         this.createPath(this.currentObject.destination);
+  //         this._importObjects(this.currentObject.type, selectedObjects, this.currentObject.destination);
+  //       }
+  //     }
+  //   }
+  // }
 
   async _importObjects(scriptType: string, scriptIds: string[], destination: string) {
     await this.createPath(destination);
@@ -259,7 +251,7 @@ export class NetSuiteSDF {
 
   issueToken() {
     if (!this.sdfCliIsInstalled) {
-      vscode.window.showErrorMessage("'sdfcli' not found in path. Please restart VS Code if you installed it.");
+      console.error("'sdfcli' not found in path. Please restart VS Code if you installed it.");
       return;
     }
 
@@ -269,7 +261,7 @@ export class NetSuiteSDF {
 
   listBundles() {
     if (!this.sdfCliIsInstalled) {
-      vscode.window.showErrorMessage("'sdfcli' not found in path. Please restart VS Code if you installed it.");
+      console.error("'sdfcli' not found in path. Please restart VS Code if you installed it.");
       return;
     }
 
@@ -279,7 +271,7 @@ export class NetSuiteSDF {
 
   listFiles() {
     if (!this.sdfCliIsInstalled) {
-      vscode.window.showErrorMessage("'sdfcli' not found in path. Please restart VS Code if you installed it.");
+      console.error("'sdfcli' not found in path. Please restart VS Code if you installed it.");
       return;
     }
 
@@ -289,7 +281,7 @@ export class NetSuiteSDF {
 
   listMissingDependencies() {
     if (!this.sdfCliIsInstalled) {
-      vscode.window.showErrorMessage("'sdfcli' not found in path. Please restart VS Code if you installed it.");
+      console.error("'sdfcli' not found in path. Please restart VS Code if you installed it.");
       return;
     }
 
@@ -297,29 +289,29 @@ export class NetSuiteSDF {
     this.runCommand(CLICommand.ListMissingDependencies);
   }
 
-  async listObjects() {
-    if (!this.sdfCliIsInstalled) {
-      vscode.window.showErrorMessage("'sdfcli' not found in path. Please restart VS Code if you installed it.");
-      return;
-    }
+  // async listObjects() {
+  //   if (!this.sdfCliIsInstalled) {
+  //     console.error("'sdfcli' not found in path. Please restart VS Code if you installed it.");
+  //     return;
+  //   }
 
-    this.doAddProjectParameter = false;
-    this.doReturnData = true;
+  //   this.doAddProjectParameter = false;
+  //   this.doReturnData = true;
 
-    await this.getConfig();
-    if (this.sdfConfig) {
-      this.currentObject = await vscode.window.showQuickPick(CustomObjects, {
-        ignoreFocusOut: true
-      });
-      if (this.currentObject) {
-        return this.runCommand(CLICommand.ListObjects, `-type ${this.currentObject.type}`);
-      }
-    }
-  }
+  //   await this.getConfig();
+  //   if (this.sdfConfig) {
+  //     this.currentObject = await vscode.window.showQuickPick(CustomObjects, {
+  //       ignoreFocusOut: true
+  //     });
+  //     if (this.currentObject) {
+  //       return this.runCommand(CLICommand.ListObjects, `-type ${this.currentObject.type}`);
+  //     }
+  //   }
+  // }
 
   preview() {
     if (!this.sdfCliIsInstalled) {
-      vscode.window.showErrorMessage("'sdfcli' not found in path. Please restart VS Code if you installed it.");
+      console.error("'sdfcli' not found in path. Please restart VS Code if you installed it.");
       return;
     }
 
@@ -328,7 +320,7 @@ export class NetSuiteSDF {
 
   revokeToken() {
     if (!this.sdfCliIsInstalled) {
-      vscode.window.showErrorMessage("'sdfcli' not found in path. Please restart VS Code if you installed it.");
+      console.error("'sdfcli' not found in path. Please restart VS Code if you installed it.");
       return;
     }
 
@@ -341,7 +333,7 @@ export class NetSuiteSDF {
     if (this.sdfConfig) {
       const files = await this.listFiles();
       if (files) {
-        vscode.window.showInformationMessage('Synchronizing SuiteScript folder.');
+        console.log('Synchronizing SuiteScript folder.');
         await this._importFiles(files);
       }
     } else {
@@ -360,7 +352,7 @@ export class NetSuiteSDF {
     if (this.sdfConfig) {
       const objects = await this.runCommand(CLICommand.ListObjects, `-type ${object.type}`);
       if (objects && objects[0] !== 'No custom objects found.') {
-        vscode.window.showInformationMessage('Synchronizing ' + object.label);
+        console.log('Synchronizing ' + object.label);
 
         const objectsChunked = _.chunk(objects, 10);
 
@@ -371,83 +363,82 @@ export class NetSuiteSDF {
     }
   };
 
-  async update() {
-    if (!this.sdfCliIsInstalled) {
-      vscode.window.showErrorMessage("'sdfcli' not found in path. Please restart VS Code if you installed it.");
-      return;
-    }
+  // async update() {
+  //   if (!this.sdfCliIsInstalled) {
+  //     console.error("'sdfcli' not found in path. Please restart VS Code if you installed it.");
+  //     return;
+  //   }
 
-    await this.getConfig();
-    const objectsRecordPath = path.join(this.rootPath, 'Objects');
-    const pathExists = await this.fileExists(objectsRecordPath);
+  //   await this.getConfig();
+  //   const objectsRecordPath = path.join(this.rootPath, 'Objects');
+  //   const pathExists = await this.fileExists(objectsRecordPath);
 
-    if (pathExists) {
-      const filePathList = await this.getXMLFileList(['Objects'], this.rootPath);
+  //   if (pathExists) {
+  //     const filePathList = await this.getXMLFileList(['Objects'], this.rootPath);
 
-      if (filePathList.length > 0) {
-        const shortNames = filePathList.map(file => file.path.substr(file.path.indexOf('Objects') + 8));
-        const selectionArr = await vscode.window.showQuickPick(shortNames, {
-          canPickMany: true
-        });
+  //     if (filePathList.length > 0) {
+  //       const shortNames = filePathList.map(file => file.path.substr(file.path.indexOf('Objects') + 8));
+  //       const selectionArr = await vscode.window.showQuickPick(shortNames, {
+  //         canPickMany: true
+  //       });
 
-        if (selectionArr && selectionArr.length > 0) {
-          const selectedFile = filePathList.filter(file => {
-            for (const selection of selectionArr) {
-              if (file.path.indexOf(selection) >= 0) {
-                return true;
-              }
-            }
-          });
-          const selectionStr = selectedFile
-            .map(file => file.scriptid.substring(0, file.scriptid.indexOf('.')))
-            .join(' ');
-          this.runCommand(CLICommand.Update, `-scriptid ${selectionStr}`);
-        }
-      }
-    }
-  }
+  //       if (selectionArr && selectionArr.length > 0) {
+  //         const selectedFile = filePathList.filter(file => {
+  //           for (const selection of selectionArr) {
+  //             if (file.path.indexOf(selection) >= 0) {
+  //               return true;
+  //             }
+  //           }
+  //         });
+  //         const selectionStr = selectedFile
+  //           .map(file => file.scriptid.substring(0, file.scriptid.indexOf('.')))
+  //           .join(' ');
+  //         this.runCommand(CLICommand.Update, `-scriptid ${selectionStr}`);
+  //       }
+  //     }
+  //   }
+  // }
 
-  async updateCustomRecordWithInstances() {
-    if (!this.sdfCliIsInstalled) {
-      vscode.window.showErrorMessage("'sdfcli' not found in path. Please restart VS Code if you installed it.");
-      return;
-    }
+  // async updateCustomRecordWithInstances() {
+  //   if (!this.sdfCliIsInstalled) {
+  //     console.error("'sdfcli' not found in path. Please restart VS Code if you installed it.");
+  //     return;
+  //   }
 
-    await this.getConfig();
-    const customRecordPath = path.join(this.rootPath, '/Objects/Records');
-    const pathExists = await this.fileExists(customRecordPath);
-    if (pathExists) {
-      const rawFileList = await this.ls(customRecordPath);
-      const fileList = rawFileList.map((filename: string) => filename.slice(0, -4));
+  //   await this.getConfig();
+  //   const customRecordPath = path.join(this.rootPath, '/Objects/Records');
+  //   const pathExists = await this.fileExists(customRecordPath);
+  //   if (pathExists) {
+  //     const rawFileList = await this.ls(customRecordPath);
+  //     const fileList = rawFileList.map((filename: string) => filename.slice(0, -4));
 
-      if (fileList) {
-        const objectId = await vscode.window.showQuickPick(fileList, {
-          ignoreFocusOut: true
-        });
-        if (objectId) {
-          this.runCommand(CLICommand.UpdateCustomRecordsWithInstances, `-scriptid ${objectId}`);
-        }
-      }
-    } else {
-      vscode.window.showErrorMessage(
-        'No custom records found in /Objects/Records. Import Objects before updating with custom records.'
-      );
-    }
-  }
+  //     if (fileList) {
+  //       const objectId = await vscode.window.showQuickPick(fileList, {
+  //         ignoreFocusOut: true
+  //       });
+  //       if (objectId) {
+  //         this.runCommand(CLICommand.UpdateCustomRecordsWithInstances, `-scriptid ${objectId}`);
+  //       }
+  //     }
+  //   } else {
+  //     console.error('No custom records found in /Objects/Records. Import Objects before updating with custom records.');
+  //   }
+  // }
 
-  async uploadFolders(context?: any) {
-    if (context && context.scheme !== 'folder') {
-      vscode.window.showWarningMessage(`${context.fsPath} is not a folder.`);
-      return;
-    }
+  // THIS EXISTS IN OTHER REPO:
+  // async uploadFolders(context?: any) {
+  //   if (context && context.scheme !== 'folder') {
+  //     console.error(`${context.fsPath} is not a folder.`);
+  //     return;
+  //   }
 
-    const files = vscode.workspace.findFiles('*.*');
-    console.log(files);
-  }
+  //   const files = vscode.workspace.findFiles('*.*');
+  //   console.log(files);
+  // }
 
   validate() {
     if (!this.sdfCliIsInstalled) {
-      vscode.window.showErrorMessage("'sdfcli' not found in path. Please restart VS Code if you installed it.");
+      console.error("'sdfcli' not found in path. Please restart VS Code if you installed it.");
       return;
     }
 
@@ -458,51 +449,51 @@ export class NetSuiteSDF {
   /** Extension Commands **/
   /************************/
 
-  async addFileToDeploy(context?: any) {
-    if (context && context.scheme !== 'file') {
-      vscode.window.showWarningMessage(`Unknown file type '${context.scheme}' to add to deploy.xml`);
-      return;
-    }
-    await this.getConfig();
-    const deployPath = path.join(this.rootPath, 'deploy.xml');
+  // async addFileToDeploy() {
+  //   if (context && context.scheme !== 'file') {
+  //     console.error(`Unknown file type '${context.scheme}' to add to deploy.xml`);
+  //     return;
+  //   }
+  //   await this.getConfig();
+  //   const deployPath = path.join(this.rootPath, 'deploy.xml');
 
-    let currentFile: string;
-    if (context && context.fsPath) {
-      currentFile = context.fsPath;
-    } else {
-      currentFile = vscode.window.activeTextEditor.document.fileName;
-    }
+  //   let currentFile: string;
+  //   if (context && context.fsPath) {
+  //     currentFile = context.fsPath;
+  //   } else {
+  //     currentFile = vscode.window.activeTextEditor.document.fileName;
+  //   }
 
-    const isScript = _.includes(currentFile, path.join(this.rootPath, '/FileCabinet/SuiteScripts'));
-    const isObject = _.includes(currentFile, path.join(this.rootPath, '/Objects'));
+  //   const isScript = _.includes(currentFile, path.join(this.rootPath, '/FileCabinet/SuiteScripts'));
+  //   const isObject = _.includes(currentFile, path.join(this.rootPath, '/Objects'));
 
-    if (!isScript && !isObject) {
-      vscode.window.showErrorMessage('Invalid file to add to deploy.xml. File was not a Script or an Object.');
-      return;
-    }
-    const xmlPath = isScript ? 'deploy.files[0].path' : 'deploy.objects[0].path';
-    const relativePath = _.replace(currentFile, this.rootPath, '~');
+  //   if (!isScript && !isObject) {
+  //     console.error('Invalid file to add to deploy.xml. File was not a Script or an Object.');
+  //     return;
+  //   }
+  //   const xmlPath = isScript ? 'deploy.files[0].path' : 'deploy.objects[0].path';
+  //   const relativePath = _.replace(currentFile, this.rootPath, '~');
 
-    const deployXmlExists = await this.fileExists(deployPath);
-    if (!deployXmlExists) {
-      this.setDefaultDeployXml();
-    }
-    const deployXml = await this.openFile(deployPath);
-    const deployJs = await this.parseXml(deployXml);
-    const elements = _.get(deployJs, xmlPath, []);
-    if (_.includes(elements, relativePath)) {
-      vscode.window.showInformationMessage('File/Object already exists in deploy.xml.');
-    } else {
-      elements.push(relativePath);
-      _.set(deployJs, xmlPath, elements);
+  //   const deployXmlExists = await this.fileExists(deployPath);
+  //   if (!deployXmlExists) {
+  //     this.setDefaultDeployXml();
+  //   }
+  //   const deployXml = await this.openFile(deployPath);
+  //   const deployJs = await this.parseXml(deployXml);
+  //   const elements = _.get(deployJs, xmlPath, []);
+  //   if (_.includes(elements, relativePath)) {
+  //     console.log('File/Object already exists in deploy.xml.');
+  //   } else {
+  //     elements.push(relativePath);
+  //     _.set(deployJs, xmlPath, elements);
 
-      const newXml = this.xmlBuilder.buildObject(deployJs);
-      fs.writeFile(deployPath, newXml, function(err) {
-        if (err) throw err;
-        vscode.window.showInformationMessage('Added File/Object to deploy.xml.');
-      });
-    }
-  }
+  //     const newXml = this.xmlBuilder.buildObject(deployJs);
+  //     fs.writeFile(deployPath, newXml, function(err) {
+  //       if (err) throw err;
+  //       console.log('Added File/Object to deploy.xml.');
+  //     });
+  //   }
+  // }
 
   refreshConfig() {
     this.getConfig({ force: true });
@@ -512,30 +503,26 @@ export class NetSuiteSDF {
     await this.getConfig();
 
     if (this.sdfConfig) {
-      vscode.window.showInformationMessage('Emptying: ' + this.rootPath + '/Objects/');
+      console.log('Emptying: ' + this.rootPath + '/Objects/');
       await rimraf(this.rootPath + '/Objects/*', (err: Error) => {
-        vscode.window.showErrorMessage(err.message);
+        console.error(err.message);
       });
-      vscode.window.showInformationMessage('Emptying: ' + this.rootPath + '/FileCabinet/SuiteScripts/');
+      console.log('Emptying: ' + this.rootPath + '/FileCabinet/SuiteScripts/');
       await rimraf(this.rootPath + '/FileCabinet/SuiteScripts/*', (err: Error) => {
-        vscode.window.showErrorMessage(err.message);
+        console.error(err.message);
       });
     }
   }
 
   async resetPassword() {
     if (!this.sdfCliIsInstalled) {
-      vscode.window.showErrorMessage("'sdfcli' not found in path. Please restart VS Code if you installed it.");
+      console.error("'sdfcli' not found in path. Please restart VS Code if you installed it.");
       return;
     }
 
     const _resetPassword = async () => {
       const prompt = `Please enter your password for your ${this.activeEnvironment.name} account.`;
-      const password = await vscode.window.showInputBox({
-        prompt: prompt,
-        password: true,
-        ignoreFocusOut: true
-      });
+      const password = await promptly.password(prompt);
       this.password = password;
     };
 
@@ -549,7 +536,7 @@ export class NetSuiteSDF {
 
   async selectEnvironment() {
     if (!this.sdfCliIsInstalled) {
-      vscode.window.showErrorMessage("'sdfcli' not found in path. Please restart VS Code if you installed it.");
+      console.error("'sdfcli' not found in path. Please restart VS Code if you installed it.");
       return;
     }
 
@@ -560,32 +547,40 @@ export class NetSuiteSDF {
           return acc;
         }, {});
         const environmentNames = Object.keys(environments);
+
+        const activeEnvironments = _.filter(environments, (env: Environment, name: string) => env.active);
+        if (activeEnvironments) {
+          const activeName = activeEnvironments[0].name;
+          console.log(`Found active environment in .sdfcli.json. Using first one found: ${activeName}`);
+          this.activeEnvironment = environments[activeName];
+          return;
+        }
+
         if (environmentNames.length === 1) {
           const environmentName = environmentNames[0];
           this.activeEnvironment = environments[environmentName];
-          this.statusBar.text = this.statusBarDefault;
-          vscode.window.showInformationMessage(`Found only one environment. Using ${environmentName}`);
+          // this.statusBar.text = this.statusBarDefault;
+          console.log(`Found only one environment. Using ${environmentName}`);
         } else {
-          const environmentName = await vscode.window.showQuickPick(environmentNames, { ignoreFocusOut: true });
+          const environmentName = await promptly.choose(
+            `Please type an environment name [${environmentNames.join(', ')}]:\n`,
+            environmentNames
+          );
           if (environmentName) {
             this.activeEnvironment = environments[environmentName];
             if (this.activeEnvironment.account === '00000000') {
-              vscode.window.showErrorMessage(
-                '.sdfcli.json account number appears to be wrong. Are you still using the blank template?'
-              );
+              console.error('.sdfcli.json account number appears to be wrong. Are you still using the blank template?');
               this.sdfConfig = undefined;
               this.activeEnvironment = undefined;
-              this.clearStatus();
+              // this.clearStatus();
             } else {
-              this.statusBar.text = this.statusBarDefault;
+              // this.statusBar.text = this.statusBarDefault;
             }
           }
         }
       } catch (e) {
-        vscode.window.showErrorMessage(
-          'Unable to parse .sdfcli.json environments. Please check repo for .sdfcli.json formatting.'
-        );
-        this.clearStatus();
+        console.error('Unable to parse .sdfcli.json environments. Please check repo for .sdfcli.json formatting.');
+        // this.clearStatus();
       }
     };
 
@@ -605,17 +600,32 @@ export class NetSuiteSDF {
 
   async sync() {
     if (!this.sdfCliIsInstalled) {
-      vscode.window.showErrorMessage("'sdfcli' not found in path. Please restart VS Code if you installed it.");
+      console.error("'sdfcli' not found in path. Please restart VS Code if you installed it.");
       return;
     }
-    await this.getConfig();
-    await this.removeFolders();
+    try {
+      await this.getConfig();
+    } catch (e) {
+      console.error('Unable to fetch config. Aborting.');
+      this.exit(1);
+    }
+
+    try {
+      await this.removeFolders();
+    } catch (e) {
+      console.error('Unable to clear folders. Aborting.');
+      this.exit(1);
+    }
+
+    console.log('boo');
+    this.exit(0);
+
     try {
       if (this.sdfConfig) {
         const objectCommands = _.map(CustomObjects, (object: CustomObject) => this.getObjectFunc(object));
         const allCommands = [this.getFiles.bind(this)].concat(objectCommands);
         await Bluebird.map(allCommands, func => func(), { concurrency: 5 });
-        vscode.window.showInformationMessage('Synchronization complete!');
+        console.log('Synchronization complete!');
       }
     } catch (e) {
     } finally {
@@ -635,7 +645,7 @@ export class NetSuiteSDF {
     } catch (e) {
       this.sdfCliIsInstalled = false;
       if (e.code === 'ENOENT') {
-        vscode.window.showErrorMessage("'sdfcli' not found in path! Check repo for install directions.");
+        console.error("'sdfcli' not found in path! Check repo for install directions.");
       } else {
         throw e;
       }
@@ -649,7 +659,7 @@ export class NetSuiteSDF {
       this.currentObject = undefined;
     }
     clearInterval(this.intervalId);
-    this.clearStatus();
+    // this.clearStatus();
 
     this.doAddProjectParameter = true;
     this.doReturnData = false;
@@ -664,54 +674,48 @@ export class NetSuiteSDF {
     this.addDefaultParameters = true;
   }
 
-  clearStatus() {
-    if (this.savedStatus) {
-      this.statusBar.text = this.savedStatus;
-      this.savedStatus = undefined;
-    } else {
-      this.statusBar.text = this.statusBarDefault;
-    }
-  }
+  // clearStatus() {
+  //   if (this.savedStatus) {
+  //     this.statusBar.text = this.savedStatus;
+  //     this.savedStatus = undefined;
+  //   } else {
+  //     this.statusBar.text = this.statusBarDefault;
+  //   }
+  // }
 
   async getConfig({ force = false }: { force?: boolean } = {}) {
     if (!this.sdfCliIsInstalled) {
-      vscode.window.showErrorMessage("'sdfcli' not found in path. Please restart VS Code if you installed it.");
+      console.error("'sdfcli' not found in path. Please restart VS Code if you installed it.");
       return;
     }
 
     if (force || !this.sdfConfig) {
-      const workspaceFolders = vscode.workspace.workspaceFolders;
-      if (workspaceFolders) {
-        this.rootPath = workspaceFolders[0].uri.fsPath;
+      this.rootPath = process.cwd();
 
-        const sdfTokenPath = path.join(this.rootPath, '.clicache');
-        const sdfCacheExists = await this.fileExists(sdfTokenPath);
+      const sdfTokenPath = path.join(this.rootPath, '.clicache');
+      const sdfCacheExists = await this.fileExists(sdfTokenPath);
 
-        if (sdfCacheExists) {
-          this.hasSdfCache = true;
-        }
+      if (sdfCacheExists) {
+        this.hasSdfCache = true;
+      }
 
-        const sdfPath = path.join(this.rootPath, '.sdfcli.json');
-        const sdfPathExists = await this.fileExists(sdfPath);
-        if (sdfPathExists) {
-          const buffer = await this.openFile(path.join(this.rootPath, '.sdfcli.json'));
-          const jsonString = buffer.toString();
-          try {
-            this.sdfConfig = JSON.parse(jsonString);
-            await this.selectEnvironment();
-          } catch (e) {
-            vscode.window.showErrorMessage(`Unable to parse .sdfcli.json file found at project root: ${this.rootPath}`);
-          }
-        } else {
-          fs.writeFileSync(path.join(this.rootPath, '.sdfcli.json'), SdfCliJson);
-          vscode.window.showErrorMessage(
-            `No .sdfcli.json file found at project root: ${this.rootPath}. Generated a blank .sdfcli.json template.`
-          );
+      const sdfPath = path.join(this.rootPath, '.sdfcli.json');
+      const sdfPathExists = await this.fileExists(sdfPath);
+      if (sdfPathExists) {
+        const buffer = await this.openFile(path.join(this.rootPath, '.sdfcli.json'));
+        const jsonString = buffer.toString();
+        try {
+          this.sdfConfig = JSON.parse(jsonString);
+          await this.selectEnvironment();
+        } catch (e) {
+          console.error(`Unable to parse .sdfcli.json file found at project root: ${this.rootPath}`);
         }
       } else {
-        vscode.window.showErrorMessage(
-          'No workspace folder found. SDF plugin cannot work without a workspace folder root containing a .sdfcli.json file.'
+        fs.writeFileSync(path.join(this.rootPath, '.sdfcli.json'), SdfCliJson);
+        console.error(
+          `No .sdfcli.json file found at project root: ${this.rootPath}. Generated a blank .sdfcli.json template.`
         );
+        this.exit(1);
       }
     } else if (!this.activeEnvironment) {
       await this.selectEnvironment();
@@ -724,7 +728,7 @@ export class NetSuiteSDF {
     }
     if (line.includes('You have entered an invalid email address or password. Please try again.')) {
       this.password = undefined;
-      vscode.window.showErrorMessage('Invalid email or password. Be careful! Too many attempts will lock you out!');
+      console.error('Invalid email or password. Be careful! Too many attempts will lock you out!');
     }
     return line;
   }
@@ -739,14 +743,11 @@ export class NetSuiteSDF {
         break;
       case line.includes('WARNING! You are deploying to a Production account, enter YES to continue'):
         const prompt = "Please type 'Deploy' to deploy to production.";
-        const answer = await vscode.window.showInputBox({
-          prompt: prompt,
-          ignoreFocusOut: true
-        });
+        const answer = await promptly.prompt(prompt);
         if (answer === 'Deploy') {
           stdinSubject.next('YES\n');
         } else {
-          this.outputChannel.append('Cancelling deployment.\n');
+          console.log('Cancelling deployment.\n');
           stdinSubject.next('NO\n');
         }
         break;
@@ -767,9 +768,9 @@ export class NetSuiteSDF {
       case line.includes('That record does not exist.'):
         break;
       case line.includes('does not exist.'):
-        vscode.window.showErrorMessage('Custom record does not exist for updating. Please Import Object first.');
+        console.error('Custom record does not exist for updating. Please Import Object first.');
       case line.includes('Installation COMPLETE'):
-        vscode.window.showInformationMessage('Installation of deployment was completed.');
+        console.log('Installation of deployment was completed.');
       default:
         break;
     }
@@ -791,9 +792,8 @@ export class NetSuiteSDF {
       this.activeEnvironment
       // (this.password || this.hasSdfCache) // No need if using tokens
     ) {
-      const workspaceFolders = vscode.workspace.workspaceFolders;
       if (this.doShowOutput) {
-        this.outputChannel.show();
+        // this.outputChannel.show();
       }
 
       let workPath = this.rootPath;
@@ -855,7 +855,7 @@ export class NetSuiteSDF {
 
       const collectedData = await streamWrapper
         .map(line => this.handlePassword(line, command, stdinSubject))
-        .do(line => (this.doShowOutput ? this.outputChannel.append(`${line}\n`) : null))
+        .do(line => (this.doShowOutput ? console.log(`${line}`) : null))
         .do(line => this.handleStdIn(line, command, stdinSubject))
         .do(line => this.handleStdOut(line, command))
         .filter(
@@ -879,13 +879,13 @@ export class NetSuiteSDF {
   }
 
   showStatus() {
-    this.savedStatus = this.statusBar.text;
+    // this.savedStatus = this.statusBar.text;
     const mode1 = ' [= ]';
     const mode2 = ' [ =]';
     let currentMode = mode1;
     this.intervalId = setInterval(() => {
       currentMode = currentMode === mode1 ? mode2 : mode1;
-      this.statusBar.text = this.savedStatus + currentMode;
+      // this.statusBar.text = this.savedStatus + currentMode;
     }, 500);
   }
 
@@ -997,7 +997,11 @@ export class NetSuiteSDF {
       await traverseFolders(dirList, root);
       return fileList;
     } catch (err) {
-      vscode.window.showErrorMessage('Unable to get file list: ', err.message);
+      console.error('Unable to get file list: ', err.message);
     }
+  }
+
+  exit(code = 0) {
+    process.exit(code);
   }
 }
