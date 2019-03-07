@@ -1,8 +1,9 @@
-import { QuickPickItem } from 'vscode';
-
-export interface ICustomObject extends QuickPickItem {
-  _destination: string[];
+export interface ICustomObject {
+  label: string;
   type: string;
+  _destination: string[];
+  detail: string;
+  description: string;
 }
 
 export class CustomObject implements ICustomObject {
