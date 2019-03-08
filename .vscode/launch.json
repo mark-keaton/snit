@@ -12,7 +12,7 @@
       "cwd": "/Users/mkeaton/playground/SDF-Test-Deploy",
       "preLaunchTask": "tsc: build - tsconfig.json",
       "outFiles": ["${workspaceFolder}/out/**/*.js"],
-      "args": ["-s"]
+      "args": ["-e", "Development"]
     }
   ]
 }

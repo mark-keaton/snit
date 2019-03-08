@@ -9,13 +9,17 @@ function parseArguments(): SnitArguments {
     addHelp: true,
     description: 'snit - sdfcli command line wrapper'
   });
+  parser.addArgument(['-e', '--environment'], {
+    action: 'store',
+    type: 'string',
+    help: 'Specify the active environment in .sdfcli.json'
+  });
   parser.addArgument(['-lf', '--listfiles'], {
     action: 'storeTrue',
     help: 'List all files in File Cabinet'
   });
   parser.addArgument(['-lo', '--listobjects'], {
     help: "List custom objects (e.g., 'restlet' or 'all')",
-    nargs: 1,
     type: 'string',
     metavar: 'TYPE'
   });
@@ -30,10 +34,12 @@ function parseArguments(): SnitArguments {
 async function runOptions(args: SnitArguments) {
   const sdf = new NetSuiteSDF();
 
-  if (args.listfiles) {
+  if (args.environment) {
+    await sdf.setEnvironment(args.environment);
+  } else if (args.listfiles) {
     await sdf.listFiles();
-  } else if (args.listobjects && args.listobjects.length > 0) {
-    await sdf.listObjects(args.listobjects[0]);
+  } else if (args.listobjects) {
+    await sdf.listObjects(args.listobjects);
   } else if (args.sync) {
     await sdf.sync();
   }

@@ -32,6 +32,7 @@ export class NetSuiteSDF {
   addDefaultParameters = true;
   collectedData: string[] = [];
   currentObject: CustomObject;
+  currentFunctionName: string;
   doAddProjectParameter = true;
   doReturnData = false;
   doSendPassword = true;
@@ -559,6 +560,9 @@ export class NetSuiteSDF {
     }
 
     const _selectEnvironment = async () => {
+      if (this.currentFunctionName === 'setEnvironment') {
+        return;
+      }
       try {
         const environments = this.sdfConfig.environments.reduce((acc, curr: Environment) => {
           acc[curr.name] = curr;
@@ -614,6 +618,45 @@ export class NetSuiteSDF {
     fs.writeFile(path.join(this.rootPath, 'deploy.xml'), defaultXml, function(err) {
       if (err) throw err;
     });
+  }
+
+  async setEnvironment(env: string) {
+    this.currentFunctionName = 'setEnvironment';
+    await this.getConfig();
+
+    const environments = this.sdfConfig.environments.reduce((acc, curr: Environment) => {
+      acc[curr.name] = curr;
+      return acc;
+    }, {});
+
+    if (!(env in environments)) {
+      console.error(`Unknown environment: ${env}`);
+      this.exit();
+    }
+
+    this.activeEnvironment = environments[env];
+    console.log(`Setting active environment: ${env}. Saving .sdfcli.json`);
+    try {
+      const sdfEnvironments = this.sdfConfig.environments;
+      const noActiveEnvironments = _.map(sdfEnvironments, (environment: Environment) => {
+        delete environment.active;
+        return environment;
+      });
+      const withActiveEnvironment = _.map(noActiveEnvironments, (environment: Environment) => {
+        if (environment.name === env) {
+          environment.active = true;
+        }
+        return environment;
+      });
+      this.sdfConfig.environments = withActiveEnvironment;
+      fs.writeFile(path.join(this.rootPath, '.sdfcli.json'), JSON.stringify(this.sdfConfig, null, 4), function(err) {
+        if (err) throw err;
+      });
+    } catch (e) {
+      console.log(e);
+    }
+
+    this.cleanup();
   }
 
   async sync() {
@@ -693,6 +736,7 @@ export class NetSuiteSDF {
     this.tempDir = undefined;
     this.addDefaultParameters = true;
     this.splitObjectString = true;
+    this.currentFunctionName = undefined;
   }
 
   // clearStatus() {
