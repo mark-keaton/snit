@@ -27,6 +27,10 @@
     "webpack-dev": "webpack --mode development --watch",
     "test-compile": "tsc -p ./"
   },
+  "bin": {
+    "snit": "./out/index.js"
+  },
+  "preferGlobal": true,
   "dependencies": {
     "argparse": "~1.0.10",
     "bluebird": "^3.5.3",

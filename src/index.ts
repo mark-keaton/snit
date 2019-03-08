@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import { ArgumentParser } from 'argparse';
 
 import { NetSuiteSDF } from './netsuite-sdf';
