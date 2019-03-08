@@ -340,3 +340,5 @@ export const CustomObjects: CustomObject[] = [
     description: ''
   })
 ];
+
+export const CustomObjectTypes = CustomObjects.map(obj => obj.type);

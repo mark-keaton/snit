@@ -21,7 +21,9 @@ import { Environment } from './environment';
 import { SDFConfig } from './sdf-config';
 import { SdfCliJson } from './sdf-cli-json';
 import { CLICommand } from './cli-command';
-import { CustomObjects, CustomObject } from './custom-object';
+import { CustomObjects, CustomObject, CustomObjectTypes } from './custom-object';
+
+const CustomObjectMap = _.reduce(CustomObjects, (acc, obj: CustomObject) => ({ ...acc, [obj.type]: obj }), {});
 
 const Bluebird = require('bluebird');
 
@@ -42,6 +44,7 @@ export class NetSuiteSDF {
   sdfcli: Observable<string>;
   sdfConfig: SDFConfig;
   sdfCliIsInstalled = true; // Prevents error messages while Code is testing SDFCLI is installed.
+  splitObjectString = true;
   // statusBar: vscode.StatusBarItem;
   tempDir: tmp.SynchrounousResult;
   hasSdfCache: boolean;
@@ -289,25 +292,39 @@ export class NetSuiteSDF {
     this.runCommand(CLICommand.ListMissingDependencies);
   }
 
-  // async listObjects() {
-  //   if (!this.sdfCliIsInstalled) {
-  //     console.error("'sdfcli' not found in path. Please restart VS Code if you installed it.");
-  //     return;
-  //   }
+  async listObjects(type_?: string) {
+    if (!this.sdfCliIsInstalled) {
+      console.error("'sdfcli' not found in path. Please restart VS Code if you installed it.");
+      return;
+    }
 
-  //   this.doAddProjectParameter = false;
-  //   this.doReturnData = true;
+    this.doAddProjectParameter = false;
+    this.doReturnData = true;
 
-  //   await this.getConfig();
-  //   if (this.sdfConfig) {
-  //     this.currentObject = await vscode.window.showQuickPick(CustomObjects, {
-  //       ignoreFocusOut: true
-  //     });
-  //     if (this.currentObject) {
-  //       return this.runCommand(CLICommand.ListObjects, `-type ${this.currentObject.type}`);
-  //     }
-  //   }
-  // }
+    await this.getConfig();
+
+    if (this.sdfConfig) {
+      if (type_ === 'all') {
+        this.splitObjectString = false;
+        return this.runCommand(CLICommand.ListObjects);
+      }
+
+      if (type_) {
+        if (!_.includes(CustomObjectTypes, type_)) {
+          console.error(`Invalid custom object type: ${type_}`);
+          return this.exit();
+        }
+      } else {
+        // this.currentObject = await vscode.window.showQuickPick(CustomObjects, {
+        //   ignoreFocusOut: true
+        // });
+        // type_ = this.currentObject.type;
+      }
+      if (type_) {
+        return this.runCommand(CLICommand.ListObjects, `-type ${this.currentObject.type}`);
+      }
+    }
+  }
 
   preview() {
     if (!this.sdfCliIsInstalled) {
@@ -341,24 +358,25 @@ export class NetSuiteSDF {
     }
   }
 
-  getObjectFunc = (object: CustomObject) => async () => {
+  getObjectFunc = (object: CustomObject, objects: string[]) => async () => {
     //Saved Searches should not be supported at this time.
     if (object.type === 'savedsearch') return;
 
-    this.doAddProjectParameter = false;
+    this.doAddProjectParameter = true;
     this.doReturnData = true;
 
     await this.getConfig();
     if (this.sdfConfig) {
-      const objects = await this.runCommand(CLICommand.ListObjects, `-type ${object.type}`);
-      if (objects && objects[0] !== 'No custom objects found.') {
-        console.log('Synchronizing ' + object.label);
+      if (objects.length > 0) {
+        const cleanedObjects = _.map(objects, obj => obj.split(':')[1]);
+        console.log('Synchronizing ' + object.type);
 
-        const objectsChunked = _.chunk(objects, 10);
+        // const objectsChunked = _.chunk(cleanedObjects, 10);
 
-        for (let i = 0; i < objectsChunked.length; i++) {
-          await this._importObjects(object.type, objectsChunked[i], object.destination);
-        }
+        // for (let i = 0; i < objectsChunked.length; i++) {
+        //   await this._importObjects(object.type, objectsChunked[i], object.destination);
+        // }
+        await this._importObjects(object.type, cleanedObjects, object.destination);
       }
     }
   };
@@ -619,9 +637,14 @@ export class NetSuiteSDF {
 
     try {
       if (this.sdfConfig) {
-        const objectCommands = _.map(CustomObjects, (object: CustomObject) => this.getObjectFunc(object));
-        const allCommands = [this.getFiles.bind(this)].concat(objectCommands);
-        await Bluebird.map(allCommands, func => func(), { concurrency: 10 });
+        const allCustomObjects = await this.listObjects('all');
+        const objectGroups = _.groupBy(allCustomObjects, objectString => objectString.split(':')[0]);
+        const objectCommands = _.map(objectGroups, (objects: string[], type_: string) => {
+          const obj = CustomObjectMap[type_];
+          return this.getObjectFunc(obj, objects); // Returns a lazy closure
+        });
+        await this.getFiles();
+        await Bluebird.map(objectCommands, func => func(), { concurrency: 10 });
         console.log('Synchronization complete!');
       }
     } catch (e) {
@@ -669,6 +692,7 @@ export class NetSuiteSDF {
     }
     this.tempDir = undefined;
     this.addDefaultParameters = true;
+    this.splitObjectString = true;
   }
 
   // clearStatus() {
@@ -776,7 +800,11 @@ export class NetSuiteSDF {
   mapCommandOutput(command: CLICommand, line: string) {
     switch (command) {
       case CLICommand.ListObjects:
-        return line.includes(':') ? line.split(':')[1] : line;
+        if (this.splitObjectString) {
+          return line.includes(':') ? line.split(':')[1] : line;
+        } else {
+          return line;
+        }
       default:
         return line;
     }

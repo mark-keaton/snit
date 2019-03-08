@@ -13,16 +13,16 @@ function parseArguments(): SnitArguments {
     action: 'storeTrue',
     help: 'List all files in File Cabinet'
   });
+  parser.addArgument(['-lo', '--listobjects'], {
+    help: "List custom objects (e.g., 'restlet' or 'all')",
+    nargs: 1,
+    type: 'string',
+    metavar: 'TYPE'
+  });
   parser.addArgument(['-s', '--sync'], {
     action: 'storeTrue',
     help: 'Empty objects and file cabinet to copy state from environment'
   });
-  // parser.addArgument(['-b', '--bar'], {
-  //   help: 'bar foo'
-  // });
-  // parser.addArgument('--baz', {
-  //   help: 'baz bar'
-  // });
   const args = parser.parseArgs();
   return args;
 }
@@ -32,6 +32,8 @@ async function runOptions(args: SnitArguments) {
 
   if (args.listfiles) {
     await sdf.listFiles();
+  } else if (args.listobjects && args.listobjects.length > 0) {
+    await sdf.listObjects(args.listobjects[0]);
   } else if (args.sync) {
     await sdf.sync();
   }
