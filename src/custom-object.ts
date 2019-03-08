@@ -66,6 +66,13 @@ export const CustomObjects: CustomObject[] = [
     description: ''
   }),
   new CustomObject({
+    label: 'CMS Content Type',
+    type: 'cmscontenttype',
+    _destination: ['CMS', 'ContentType'],
+    detail: 'custcontenttype',
+    description: ''
+  }),
+  new CustomObject({
     label: 'CRM Custom Fields',
     type: 'crmcustomfield',
     _destination: ['Fields', 'CRM'],
@@ -252,6 +259,13 @@ export const CustomObjects: CustomObject[] = [
     label: 'Scheduled Scripts',
     type: 'scheduledscript',
     _destination: ['Scripts', 'Scheduled'],
+    detail: 'customscript',
+    description: ''
+  }),
+  new CustomObject({
+    label: 'SDF Installation Script',
+    type: '',
+    _destination: ['Scripts', 'SDFInstallation'],
     detail: 'customscript',
     description: ''
   }),

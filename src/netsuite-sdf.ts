@@ -505,11 +505,11 @@ export class NetSuiteSDF {
     if (this.sdfConfig) {
       console.log('Emptying: ' + this.rootPath + '/Objects/');
       await rimraf(this.rootPath + '/Objects/*', (err: Error) => {
-        console.error(err.message);
+        console.error(err);
       });
       console.log('Emptying: ' + this.rootPath + '/FileCabinet/SuiteScripts/');
       await rimraf(this.rootPath + '/FileCabinet/SuiteScripts/*', (err: Error) => {
-        console.error(err.message);
+        console.error(err);
       });
     }
   }
@@ -617,14 +617,11 @@ export class NetSuiteSDF {
       this.exit(1);
     }
 
-    console.log('boo');
-    this.exit(0);
-
     try {
       if (this.sdfConfig) {
         const objectCommands = _.map(CustomObjects, (object: CustomObject) => this.getObjectFunc(object));
         const allCommands = [this.getFiles.bind(this)].concat(objectCommands);
-        await Bluebird.map(allCommands, func => func(), { concurrency: 5 });
+        await Bluebird.map(allCommands, func => func(), { concurrency: 10 });
         console.log('Synchronization complete!');
       }
     } catch (e) {
