@@ -15,6 +15,7 @@ var CLICommand;
     CLICommand["ListObjects"] = "listobjects";
     CLICommand["Preview"] = "preview";
     CLICommand["RevokeToken"] = "revoketoken";
+    CLICommand["SaveToken"] = "savetoken";
     CLICommand["Update"] = "update";
     CLICommand["UpdateCustomRecordsWithInstances"] = "updatecustomrecordwithinstances";
     CLICommand["Validate"] = "validate";

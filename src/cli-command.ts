@@ -12,6 +12,7 @@ export enum CLICommand {
   ListObjects = 'listobjects',
   Preview = 'preview',
   RevokeToken = 'revoketoken',
+  SaveToken = 'savetoken',
   Update = 'update',
   UpdateCustomRecordsWithInstances = 'updatecustomrecordwithinstances',
   Validate = 'validate'

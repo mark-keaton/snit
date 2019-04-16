@@ -317,6 +317,14 @@ class NetSuiteSDF {
         this.doAddProjectParameter = false;
         this.runCommand(cli_command_1.CLICommand.RevokeToken);
     }
+    saveToken(tokenId, tokenSecret) {
+        if (!this.sdfCliIsInstalled) {
+            console.error("'sdfcli' not found in path. Please restart VS Code if you installed it.");
+            return;
+        }
+        this.doAddProjectParameter = false;
+        this.runCommand(cli_command_1.CLICommand.SaveToken, `-tokenid ${tokenId}`, `-tokensecret ${tokenSecret}`);
+    }
     getFiles() {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.getConfig();
@@ -617,6 +625,7 @@ class NetSuiteSDF {
                     yield this.getFiles();
                     yield Bluebird.map(objectCommands, func => func(), { concurrency: 10 });
                     console.log('Synchronization complete!');
+                    this.exit();
                 }
             }
             catch (e) {

@@ -4,6 +4,7 @@ import { ArgumentParser } from 'argparse';
 
 import { NetSuiteSDF } from './netsuite-sdf';
 import { SnitArguments } from './snit-arguments';
+import { Subcommand } from './subcommands';
 
 function parseArguments(): SnitArguments {
   const parser = new ArgumentParser({
@@ -11,6 +12,10 @@ function parseArguments(): SnitArguments {
     addHelp: true,
     description: 'snit - sdfcli command line wrapper'
   });
+  // const subparsers = parser.addSubparsers({
+  //   title: 'subcommands',
+  //   dest: 'subcommand'
+  // });
   parser.addArgument(['-e', '--environment'], {
     action: 'store',
     type: 'string',
@@ -29,6 +34,18 @@ function parseArguments(): SnitArguments {
     action: 'storeTrue',
     help: 'Empty objects and file cabinet to copy state from environment'
   });
+  // Subcommands are messing up the rest of the parser
+  // Mayber refactor everything to subcommand
+  // const saveTokenParser = subparsers.addParser('savetoken', {
+  //   aliases: ['st'],
+  //   addHelp: true
+  // });
+  // saveTokenParser.addArgument(['-id', '--tokenid'], {
+  //   help: 'Access token id'
+  // });
+  // saveTokenParser.addArgument(['-sc', '--secret'], {
+  //   help: 'Access token secret'
+  // });
   const args = parser.parseArgs();
   return args;
 }
@@ -42,6 +59,8 @@ async function runOptions(args: SnitArguments) {
     await sdf.listFiles();
   } else if (args.listobjects) {
     await sdf.listObjects(args.listobjects);
+    // } else if (args.subcommand === Subcommand.SaveToken) {
+    //   await sdf.saveToken(args.tokenid, args.secret);
   } else if (args.sync) {
     await sdf.sync();
   }
