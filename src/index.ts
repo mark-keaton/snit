@@ -8,7 +8,7 @@ import { Subcommand } from './subcommands';
 
 function parseArguments(): SnitArguments {
   const parser = new ArgumentParser({
-    version: '0.0.1',
+    version: '0.0.2',
     addHelp: true,
     description: 'snit - sdfcli command line wrapper'
   });

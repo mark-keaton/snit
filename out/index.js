@@ -13,7 +13,7 @@ const argparse_1 = require("argparse");
 const netsuite_sdf_1 = require("./netsuite-sdf");
 function parseArguments() {
     const parser = new argparse_1.ArgumentParser({
-        version: '0.0.1',
+        version: '0.0.2',
         addHelp: true,
         description: 'snit - sdfcli command line wrapper'
     });
