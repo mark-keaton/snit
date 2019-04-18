@@ -40,7 +40,8 @@ class NetSuiteSDF {
         this.xmlBuilder = new xml2js.Builder({ headless: true });
         this.getObjectFunc = (object, objects) => () => __awaiter(this, void 0, void 0, function* () {
             //Saved Searches should not be supported at this time.
-            // if (object.type === 'savedsearch') return;
+            if (object.type === 'savedsearch')
+                return;
             this.doAddProjectParameter = true;
             this.doReturnData = true;
             yield this.getConfig();
