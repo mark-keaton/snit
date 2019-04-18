@@ -13,7 +13,7 @@ const argparse_1 = require("argparse");
 const netsuite_sdf_1 = require("./netsuite-sdf");
 function parseArguments() {
     const parser = new argparse_1.ArgumentParser({
-        version: '0.0.3',
+        version: '0.0.4',
         addHelp: true,
         description: 'snit - sdfcli command line wrapper'
     });
@@ -21,6 +21,10 @@ function parseArguments() {
     //   title: 'subcommands',
     //   dest: 'subcommand'
     // });
+    parser.addArgument(['-d', '--deploy'], {
+        action: 'storeTrue',
+        help: 'Deploy project to the active environment in .sdfcli.json'
+    });
     parser.addArgument(['-e', '--environment'], {
         action: 'store',
         type: 'string',
@@ -57,7 +61,10 @@ function parseArguments() {
 function runOptions(args) {
     return __awaiter(this, void 0, void 0, function* () {
         const sdf = new netsuite_sdf_1.NetSuiteSDF();
-        if (args.environment) {
+        if (args.deploy) {
+            yield sdf.deploy();
+        }
+        else if (args.environment) {
             yield sdf.setEnvironment(args.environment);
         }
         else if (args.listfiles) {

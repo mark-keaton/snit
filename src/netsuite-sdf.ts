@@ -165,7 +165,8 @@ export class NetSuiteSDF {
     }
     await this.getConfig();
 
-    const useQuickDeploy = _.get(this.sdfConfig, 'useQuickDeploy', false);
+    // TODO: Add parameter to Snit for Quick Deploy
+    const useQuickDeploy = _.get(this.sdfConfig, 'useQuickDeploy', true);
     if (useQuickDeploy) {
       await this._generateTempDeployDirectory();
 

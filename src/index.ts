@@ -8,7 +8,7 @@ import { Subcommand } from './subcommands';
 
 function parseArguments(): SnitArguments {
   const parser = new ArgumentParser({
-    version: '0.0.3',
+    version: '0.0.4',
     addHelp: true,
     description: 'snit - sdfcli command line wrapper'
   });
@@ -16,6 +16,10 @@ function parseArguments(): SnitArguments {
   //   title: 'subcommands',
   //   dest: 'subcommand'
   // });
+  parser.addArgument(['-d', '--deploy'], {
+    action: 'storeTrue',
+    help: 'Deploy project to the active environment in .sdfcli.json'
+  });
   parser.addArgument(['-e', '--environment'], {
     action: 'store',
     type: 'string',
@@ -53,7 +57,9 @@ function parseArguments(): SnitArguments {
 async function runOptions(args: SnitArguments) {
   const sdf = new NetSuiteSDF();
 
-  if (args.environment) {
+  if (args.deploy) {
+    await sdf.deploy();
+  } else if (args.environment) {
     await sdf.setEnvironment(args.environment);
   } else if (args.listfiles) {
     await sdf.listFiles();
