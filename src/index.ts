@@ -8,7 +8,7 @@ import { Subcommand } from './subcommands';
 
 function parseArguments(): SnitArguments {
   const parser = new ArgumentParser({
-    version: '0.0.4',
+    version: '0.0.5',
     addHelp: true,
     description: 'snit - sdfcli command line wrapper'
   });
@@ -33,6 +33,10 @@ function parseArguments(): SnitArguments {
     help: "List custom objects (e.g., 'restlet' or 'all')",
     type: 'string',
     metavar: 'TYPE'
+  });
+  parser.addArgument(['-p', '--preview'], {
+    action: 'storeTrue',
+    help: 'Preview current deployment'
   });
   parser.addArgument(['-s', '--sync'], {
     action: 'storeTrue',
@@ -67,6 +71,8 @@ async function runOptions(args: SnitArguments) {
     await sdf.listObjects(args.listobjects);
     // } else if (args.subcommand === Subcommand.SaveToken) {
     //   await sdf.saveToken(args.tokenid, args.secret);
+  } else if (args.preview) {
+    await sdf.preview();
   } else if (args.sync) {
     await sdf.sync();
   }

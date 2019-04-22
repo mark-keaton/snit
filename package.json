@@ -1,6 +1,6 @@
 {
   "name": "snit",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "SDFCLI Node wrapper",
   "main": "dist/index.js",
   "repository": {

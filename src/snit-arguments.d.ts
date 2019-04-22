@@ -5,6 +5,7 @@ export interface SnitArguments {
   environment: string;
   listobjects: string;
   listfiles: boolean;
+  preview: boolean;
   sync: boolean;
 
   subcommand: Subcommand;

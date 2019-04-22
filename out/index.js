@@ -13,7 +13,7 @@ const argparse_1 = require("argparse");
 const netsuite_sdf_1 = require("./netsuite-sdf");
 function parseArguments() {
     const parser = new argparse_1.ArgumentParser({
-        version: '0.0.4',
+        version: '0.0.5',
         addHelp: true,
         description: 'snit - sdfcli command line wrapper'
     });
@@ -38,6 +38,10 @@ function parseArguments() {
         help: "List custom objects (e.g., 'restlet' or 'all')",
         type: 'string',
         metavar: 'TYPE'
+    });
+    parser.addArgument(['-p', '--preview'], {
+        action: 'storeTrue',
+        help: 'Preview current deployment'
     });
     parser.addArgument(['-s', '--sync'], {
         action: 'storeTrue',
@@ -74,6 +78,9 @@ function runOptions(args) {
             yield sdf.listObjects(args.listobjects);
             // } else if (args.subcommand === Subcommand.SaveToken) {
             //   await sdf.saveToken(args.tokenid, args.secret);
+        }
+        else if (args.preview) {
+            yield sdf.preview();
         }
         else if (args.sync) {
             yield sdf.sync();

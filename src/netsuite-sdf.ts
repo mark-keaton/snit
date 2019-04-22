@@ -170,10 +170,10 @@ export class NetSuiteSDF {
     if (useQuickDeploy) {
       await this._generateTempDeployDirectory();
 
-      await this.runCommand(CLICommand.Deploy);
+      await this.runCommand(CLICommand.Deploy, '-np', '-sw');
 
       await rimraf(this.rootPath + '/var', (err: Error) => {
-        console.error(err.message);
+        // console.error(err.message);
       });
     } else {
       await this.runCommand(CLICommand.Deploy);
@@ -328,13 +328,26 @@ export class NetSuiteSDF {
     }
   }
 
-  preview() {
+  async preview() {
     if (!this.sdfCliIsInstalled) {
       console.error("'sdfcli' not found in path. Please restart VS Code if you installed it.");
       return;
     }
+    await this.getConfig();
 
-    this.runCommand(CLICommand.Preview);
+    // TODO: Add parameter to Snit for Quick Deploy
+    const useQuickDeploy = _.get(this.sdfConfig, 'useQuickDeploy', true);
+    if (useQuickDeploy) {
+      await this._generateTempDeployDirectory();
+
+      await this.runCommand(CLICommand.Preview);
+
+      await rimraf(this.rootPath + '/var', (err: Error) => {
+        // console.error(err.message);
+      });
+    } else {
+      await this.runCommand(CLICommand.Preview);
+    }
   }
 
   revokeToken() {

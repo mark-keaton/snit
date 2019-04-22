@@ -165,9 +165,9 @@ class NetSuiteSDF {
             const useQuickDeploy = _.get(this.sdfConfig, 'useQuickDeploy', true);
             if (useQuickDeploy) {
                 yield this._generateTempDeployDirectory();
-                yield this.runCommand(cli_command_1.CLICommand.Deploy);
+                yield this.runCommand(cli_command_1.CLICommand.Deploy, '-np', '-sw');
                 yield rimraf(this.rootPath + '/var', (err) => {
-                    console.error(err.message);
+                    // console.error(err.message);
                 });
             }
             else {
@@ -304,11 +304,25 @@ class NetSuiteSDF {
         });
     }
     preview() {
-        if (!this.sdfCliIsInstalled) {
-            console.error("'sdfcli' not found in path. Please restart VS Code if you installed it.");
-            return;
-        }
-        this.runCommand(cli_command_1.CLICommand.Preview);
+        return __awaiter(this, void 0, void 0, function* () {
+            if (!this.sdfCliIsInstalled) {
+                console.error("'sdfcli' not found in path. Please restart VS Code if you installed it.");
+                return;
+            }
+            yield this.getConfig();
+            // TODO: Add parameter to Snit for Quick Deploy
+            const useQuickDeploy = _.get(this.sdfConfig, 'useQuickDeploy', true);
+            if (useQuickDeploy) {
+                yield this._generateTempDeployDirectory();
+                yield this.runCommand(cli_command_1.CLICommand.Preview);
+                yield rimraf(this.rootPath + '/var', (err) => {
+                    // console.error(err.message);
+                });
+            }
+            else {
+                yield this.runCommand(cli_command_1.CLICommand.Preview);
+            }
+        });
     }
     revokeToken() {
         if (!this.sdfCliIsInstalled) {
